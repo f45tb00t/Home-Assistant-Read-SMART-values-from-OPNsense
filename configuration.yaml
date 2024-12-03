@@ -1,0 +1,53 @@
+  - platform: rest
+    name: "SMART Info NVMe Temperature"
+    resource: "https://<OPNsense_IP>:443/api/smart/service/info"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: '{"type": "A", "device": "nvme0"}'
+    username: "<username>"
+    password: "<password>"
+    verify_ssl: false
+    value_template: >
+      {{ value_json.output | regex_findall_index('Temperature:\\s+(\\d+)\\s+Celsius', 0) }}
+    scan_interval: 300
+  - platform: rest
+    name: "SMART Last Test Type"
+    resource: "https://<OPNsense_IP>:443/api/smart/service/logs"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: '{"device": "nvme0", "type": "selftest"}'
+    username: "<username>"
+    password: "<password>"
+    verify_ssl: false
+    value_template: >
+      {% set lines = value_json.output.split('\n') %}
+      {% for line in lines %}
+        {% if line.startswith(' 0 ') %}
+          {% set parts = line.split() %}
+          {{ parts[1] }}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+    scan_interval: 300
+  - platform: rest
+    name: "SMART Last Test Status"
+    resource: "https://<OPNsense_IP>:443/api/smart/service/logs"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: '{"device": "nvme0", "type": "selftest"}'
+    username: "<username>"
+    password: "<password>"
+    verify_ssl: false
+    value_template: >
+      {% set lines = value_json.output.split('\n') %}
+      {% for line in lines %}
+        {% if line.startswith(' 0 ') %}
+          {% set parts = line.split('  ', 2) %}
+          {{ parts[2].split('                 ')[0].strip() }}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+    scan_interval: 300
